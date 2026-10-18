@@ -1,0 +1,45 @@
+name: Acciones de administrador
+
+on:
+  repository_dispatch:
+    types: [admin_borrar, admin_vaciar]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: inscripciones
+  cancel-in-progress: false
+
+jobs:
+  admin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ejecutar acción
+        env:
+          ACCION: ${{ github.event.action }}
+          NOMBRE_RAW: ${{ github.event.client_payload.nombre }}
+        run: |
+          set -euo pipefail
+          [ -f inscritos.json ] || echo '[]' > inscritos.json
+
+          if [ "$ACCION" = "admin_vaciar" ]; then
+            echo '[]' > inscritos.json
+            MSG="Admin: vaciar inscripciones"
+          else
+            NOMBRE="$(printf '%s' "$NOMBRE_RAW" | tr -d '\r\n\t' | sed 's/^ *//;s/ *$//')"
+            [ -n "$NOMBRE" ] || { echo "Nombre vacío"; exit 0; }
+            jq --arg n "$NOMBRE" 'map(select((.nombre|ascii_downcase)!=($n|ascii_downcase)))' inscritos.json > tmp.json
+            mv tmp.json inscritos.json
+            MSG="Admin: eliminar inscrito $NOMBRE"
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add inscritos.json
+          git diff --cached --quiet && { echo "Sin cambios"; exit 0; }
+          git commit -m "$MSG"
+          git pull --rebase origin "$GITHUB_REF_NAME" || true
+          git push
