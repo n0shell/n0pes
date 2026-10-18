@@ -72,8 +72,6 @@ const IMG={
 "Sevilla FC":"assets/sevilla.webp",
 "Real Sociedad":"assets/realsociedad.webp"
 };
-// Si añades un club nuevo a mano en Participantes, añádelo aquí también: "Nombre exacto":"img/archivo.png",
-};
 const shuf=a=>{a=[...a];for(let i=a.length;i>1;){const j=Math.random()*i|0;i--;[a[i],a[j]]=[a[j],a[i]]}return a};
 const lum=c=>{const n=parseInt(c.slice(1),16);return(n>>16)*.3+((n>>8)&255)*.6+(n&255)*.1};
 function crest(n,sz=26){let bg=CM[n],fg;if(bg)fg=lum(bg)>150?'#111':'#fff';else{let h=0;for(const c of n)h=(h*31+c.charCodeAt(0))%360;bg=`hsl(${h},55%,38%)`;fg='#fff'}
