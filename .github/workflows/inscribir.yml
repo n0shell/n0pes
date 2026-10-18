@@ -1,0 +1,59 @@
+name: Inscribir participante
+
+on:
+  repository_dispatch:
+    types: [inscripcion]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: inscripciones
+  cancel-in-progress: false
+
+jobs:
+  inscribir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validar y añadir inscrito
+        env:
+          NOMBRE_RAW: ${{ github.event.client_payload.nombre }}
+          CLUB_RAW: ${{ github.event.client_payload.club }}
+        run: |
+          set -euo pipefail
+
+          # Los datos llegan por variables de entorno, nunca interpolados en el shell
+          NOMBRE="$(printf '%s' "$NOMBRE_RAW" | tr -d '\r\n\t' | sed 's/^ *//;s/ *$//')"
+          CLUB="$(printf '%s' "$CLUB_RAW" | tr -d '\r\n\t' | sed 's/^ *//;s/ *$//')"
+
+          if [ ${#NOMBRE} -lt 2 ] || [ ${#NOMBRE} -gt 24 ] || [ -z "$CLUB" ] || [ ${#CLUB} -gt 60 ]; then
+            echo "Datos inválidos, se ignora."; exit 0
+          fi
+
+          # El club debe existir en la lista CLS de index.html
+          if ! grep -qF "$CLUB|" index.html; then
+            echo "Club no reconocido, se ignora."; exit 0
+          fi
+
+          [ -f inscritos.json ] || echo '[]' > inscritos.json
+
+          DUP=$(jq --arg n "$NOMBRE" --arg c "$CLUB" \
+            '[.[] | select((.nombre|ascii_downcase)==($n|ascii_downcase) or (.club|ascii_downcase)==($c|ascii_downcase))] | length' \
+            inscritos.json)
+
+          if [ "$DUP" -gt 0 ]; then
+            echo "Nombre o club duplicado, se ignora."; exit 0
+          fi
+
+          jq --arg n "$NOMBRE" --arg c "$CLUB" --arg f "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '. + [{nombre:$n, club:$c, fecha:$f}]' inscritos.json > tmp.json
+          mv tmp.json inscritos.json
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add inscritos.json
+          git commit -m "Nueva inscripción: $NOMBRE"
+          git pull --rebase origin "$GITHUB_REF_NAME" || true
+          git push
