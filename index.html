@@ -191,8 +191,8 @@ V.dat=()=>`<div class="card"><h3>Exportar</h3><div class="row"><button onclick="
 ${bks().map((b,i)=>`<div class="row" style="padding:6px 0;border-bottom:1px solid #1f352c"><span>${new Date(b.t).toLocaleString('es-ES')} · ${esc(b.l)}</span><button class="s" onclick="rest(${i})">Restaurar</button></div>`).join('')}</div>
 <div class="card"><h3>Zona peligrosa</h3><div class="row"><button class="s" onclick="demo()">Cargar demostración</button><button class="d" onclick="reset()">Borrar todo</button></div></div>`;
 // ---------- inscripción online ----------
-const INSC_WORKER='https://TU-WORKER.TU-SUBDOMINIO.workers.dev'; // URL de tu Cloudflare Worker
-const INSC_REPO='TUUSUARIO/TUREPO';                              // usuario/repositorio de GitHub
+const INSC_WORKER='https://pes6-inscripciones.hnzzh.workers.dev';
+const INSC_REPO='n0shell/n0pes';                            // usuario/repositorio de GitHub
 let INS=[],insLoaded=false,ADMIN=false,APW='';
 async function wk(body){const r=await fetch(INSC_WORKER,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return r.json()}
 async function adminLogin(){const pw=prompt('Contraseña de administrador:');if(!pw)return;
